@@ -36,7 +36,7 @@ aws-observability-mcp/
 └── requirements.txt
 ```
 
-See [`aws-observability-mcp-server-SPEC.md`](./aws-observability-mcp-server-SPEC.md) for the full
+See [`DESIGN.md`](./DESIGN.md) for the full
 design, tool specs, testing strategy, and phased build plan.
 
 ## Development
