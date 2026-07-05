@@ -1,11 +1,10 @@
-# AWS Observability MCP Server — Build Spec
+# AWS Observability MCP Server — Design & Build Plan
 
 > A remote, OAuth-secured MCP server that exposes an AWS CloudWatch + ECS observability stack
 > to any LLM agent, enabling natural-language incident investigation.
 >
-> **This file is the working brief for Claude Code.** It contains the full design, tool
-> specs, testing strategy, and a phased build plan. Build it phase by phase, committing at
-> each milestone.
+> This document captures the design of the project: the architecture, tool specifications,
+> testing strategy, and a phased build plan. The work is built and committed phase by phase.
 
 ---
 
@@ -45,9 +44,9 @@ result truncation for context budget, and a scale-to-zero deployment.
 > Use the official `awslabs/mcp` CloudWatch server as a **reference** for tool shapes and naming.
 > Do not copy it; build the remote + auth + deploy layer it does not provide.
 
-Resume framing: *"Productionized a local observability MCP server into a secure remote
+In short: this productionizes a local observability MCP server into a secure, remote,
 multi-tenant service on a scale-to-zero deployment, with OAuth 2.1, tool-level RBAC, and
-OpenTelemetry tracing."*
+OpenTelemetry tracing.
 
 ---
 
@@ -144,16 +143,16 @@ must be actionable (tell the agent what to try next).
 - **Input:** `state: str = "ALARM"`, `max_records: int = 25`
 - **Returns:** alarms in the requested state with their metric, threshold, and state-change time
 
-### 6.5 `summarize_incident` (composite — the showcase tool)
+### 6.5 `summarize_incident` (composite)
 - **Orchestrates:** fans out to `list_recent_alarms` → `query_cloudwatch_metrics` → `tail_logs`
   (+ `get_service_health`) for a time window, correlates them, returns a structured digest.
 - **Input:** `service_name: str`, `time_window_minutes: int = 30`
 - **Returns:** `{ summary, firing_alarms[], key_metrics[], top_errors[], likely_cause }`
-- This is the "pager fires → auto-summary" path and the strongest demo moment.
+- This is the "pager fires → auto-summary" path: one call returns a full incident digest.
 
 ---
 
-## 7. Production design decisions (the senior signal)
+## 7. Production design decisions
 
 1. **Read/write separation + scoped tokens.** All tools here are read-only. If a write tool is
    ever added, it requires a *different* OAuth scope (confused-deputy defense / tool-level RBAC).
@@ -244,7 +243,7 @@ matter are the `Dockerfile` + the recorded demo, not a 24/7 server.
 ## 10. Phased build plan (commit at each milestone)
 
 - **Phase 0 — Scaffold.** Repo structure, `requirements.txt` (pinned), FastMCP instance, one
-  trivial tool, run over **stdio**, verify in the **MCP Inspector**. ✅ first green path.
+  trivial tool, run over **stdio**, verify in the **MCP Inspector**. First working path.
 - **Phase 1 — AWS read tools on moto.** Implement `get_service_health`,
   `query_cloudwatch_metrics`, `tail_logs`, `list_recent_alarms` as thin `boto3` wrappers.
   Add truncation/summarization in `formatting.py`. Write `pytest` + `moto` tests for each.
@@ -257,8 +256,8 @@ matter are the `Dockerfile` + the recorded demo, not a 24/7 server.
 - **Phase 5 — Evals + polish.** Write 10 evaluation questions (§11), polish the README with the
   architecture diagram, link the demo recording.
 
-Realistic budget: Phases 0–2 are the bulk and are 100% free on moto. Phases 3–5 are the
-production layer that differentiates the project.
+Cost: Phases 0–2 are the bulk of the work and run entirely on moto at no cost. Phases 3–5
+add the production layer (remote transport, auth, deployment).
 
 ---
 
@@ -280,20 +279,19 @@ calls** against a seeded dataset, with single verifiable answers. Example shape:
 
 ---
 
-## 12. AI / engineering topics this project demonstrates
+## 12. Engineering concepts covered
 
-- **MCP internals** — implementing tools, resources, prompts (not just consuming a server)
+- **MCP internals** — implementing tools, resources, and prompts (not just consuming a server)
 - **Tool / function calling** — how the model reads a schema, picks a tool, fills args, acts
-- **Agent loop / ReAct** — reason → act → observe → repeat over your tools
-- **Dynamic tool orchestration** — LLM composes a different sequence per question
+- **Agent loop / ReAct** — reason → act → observe → repeat over the tools
+- **Dynamic tool orchestration** — the LLM composes a different sequence per question
 - **Context-window & token management** — truncation/summarization before payloads hit the model
 - **Prompt engineering** — tool descriptions/docstrings *are* prompts; plus the summarization prompt
 - **Structured output / synthesis** — turning raw telemetry into a root-cause narrative
-- *(Optional)* **LangGraph** — if you add a custom LangGraph agent that consumes the server via
+- *(Optional)* **LangGraph** — a custom LangGraph agent that consumes the server via
   `langchain-mcp-adapters`
 
-> Not covered (by design): transformer internals, embeddings, RAG/vector search, model training.
-> Pair with the "Agentic RAG-over-MCP" project to add the RAG signal.
+> Out of scope by design: transformer internals, embeddings, RAG/vector search, model training.
 
 ---
 
@@ -318,15 +316,3 @@ calls** against a seeded dataset, with single verifiable answers. Example shape:
 **Testing**
 - moto: https://github.com/getmoto/moto
 - LocalStack: https://localstack.cloud
-
----
-
-## 14. Suggested first prompts for Claude Code
-
-1. "Read SPEC.md. Scaffold the repo per §8, set up `requirements.txt` with pinned `fastmcp`,
-   `mcp`, and `boto3`, and create a minimal FastMCP server over stdio with one placeholder tool.
-   Show me how to test it in the MCP Inspector." *(Phase 0)*
-2. "Implement `query_cloudwatch_metrics` per §6.2 with a Pydantic input/output model, truncation
-   in `formatting.py`, and a `pytest` + `moto` test that seeds a synthetic 5xx spike." *(Phase 1)*
-3. "Implement the `summarize_incident` composite tool per §6.5 with a moto fixture that seeds a
-   firing alarm + matching error logs, and a test asserting the correlated digest." *(Phase 2)*
