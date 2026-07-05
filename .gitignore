@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# AWS / secrets
+.env
+*.pem
+.aws/
+credentials
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Terraform / infra state
+*.tfstate
+*.tfstate.*
+.terraform/

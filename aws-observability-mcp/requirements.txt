@@ -1,0 +1,15 @@
+# Core — pin these; MCP spec is evolving and breaking changes are in flight
+fastmcp==3.4.2
+mcp==1.28.1
+boto3==1.43.36
+pydantic==2.13.4
+
+# Testing — moto mocks AWS at the boto3 API level; no real AWS account needed
+pytest==9.1.1
+moto[cloudwatch,logs,ecs]==5.2.2
+pytest-asyncio==0.24.0
+
+# Optional — uncomment when adding Phase 3-4 features
+# redis==5.2.1
+# opentelemetry-sdk==1.30.0
+# opentelemetry-exporter-otlp==1.30.0
