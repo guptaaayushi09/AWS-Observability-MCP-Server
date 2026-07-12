@@ -1,37 +1,24 @@
-"""FastMCP server instance and tool registration.
+"""Server entry point.
 
-Phase 0: a minimal server exposed over stdio with a single placeholder tool so the
-transport, tool discovery, and MCP Inspector loop can be verified end to end before any
-AWS logic is wired in.
+Imports the shared FastMCP instance, pulls in the tool modules so their `@mcp.tool`
+registrations run, and exposes `main()` to serve over stdio (dev transport).
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastmcp import FastMCP
-
 from . import __version__
+from .app import READ_ONLY, mcp
 
-mcp = FastMCP(
-    name="aws-observability-mcp",
-    version=__version__,
-    instructions=(
-        "Read-only AWS CloudWatch + ECS observability tools for natural-language incident "
-        "investigation. Compose the tools per question: check service health, query metrics, "
-        "tail logs, and list firing alarms, then correlate the results."
-    ),
-)
+# Importing the tool modules registers their tools on `mcp` as a side effect.
+from .tools import alarms as _alarms  # noqa: F401
+from .tools import health as _health  # noqa: F401
+from .tools import logs as _logs  # noqa: F401
+from .tools import metrics as _metrics  # noqa: F401
 
 
-@mcp.tool(
-    annotations={
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-        "openWorldHint": True,
-    }
-)
+@mcp.tool(annotations=READ_ONLY)
 def ping() -> dict[str, str]:
     """Health check for the server itself.
 
@@ -47,7 +34,7 @@ def ping() -> dict[str, str]:
 
 
 def main() -> None:
-    """Entry point: run the server over stdio (dev transport)."""
+    """Run the server over stdio (dev transport)."""
     mcp.run()
 
 
